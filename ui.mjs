@@ -130,6 +130,14 @@ function renderCode(s) {
     }
     return li;
   }));
+  const active = els.code.querySelector('.active');
+  if (active && s.code.length >= 20) {
+    const top = active.offsetTop;
+    if (top < els.code.scrollTop || top + active.offsetHeight > els.code.scrollTop + els.code.clientHeight) {
+      els.code.scrollTop = Math.max(0, top - els.code.clientHeight / 3);
+    }
+  }
+  if (s.code.length < 20) els.code.scrollTop = 0;
   const empty = s.code.length === 0;
   els.code.hidden = empty;
   els.codeEmpty.hidden = !empty;
@@ -142,11 +150,13 @@ const instructionGuide = {
   addi: ['Suma un número escrito en la instrucción al valor de un registro.', 'addi t1, t0, 2 guarda en t1 lo que vale t0 más 2.'],
   la: ['Guarda en un registro la dirección de una etiqueta.', 'la t0, yA guarda en t0 la dirección donde está yA.'],
   lw: ['Lee en memoria una palabra de 4 bytes y la guarda en un registro.', 'lw t1, 0(t0) lee 4 bytes desde la dirección guardada en t0.'],
-  sw: ['Guarda los 4 bytes de un registro en memoria.', 'sw t2, 0(t3) escribe t2 en la dirección guardada en t3.'],
+  sw: ['Copia el valor del primer registro a una casilla de memoria. El registro entre paréntesis indica la dirección.', 'Si t2 vale 8, sw t2, 0(t3) copia ese 8 a la dirección de t3. El 0 significa que usas esa dirección tal cual.'],
   lb: ['Lee un byte de memoria y lo guarda en un registro, extendiendo su signo.', 'lb t0, 0(a0) lee el byte en la dirección guardada en a0.'],
   sb: ['Escribe en memoria el byte menos significativo de un registro.', 'sb t2, 0(t3) escribe ese byte de t2 en la dirección guardada en t3.'],
   ecall: ['Pide un servicio a RARS. a7 indica el servicio y otros registros llevan los datos.', 'Con a7 = 1, ecall imprime el número de a0. Con a7 = 8, lee una cadena. Con a7 = 10, termina.'],
   beq: ['Salta a la etiqueta si los dos registros contienen el mismo valor.', 'beq t0, t1, choque salta a choque cuando t0 y t1 son iguales.'],
+  bgt: ['Salta si el valor de la izquierda es mayor que el de la derecha.', 'bgt s3, s2, fin solo salta si s3 supera a s2. Si ambos valen 5, sigue en la línea siguiente.'],
+  '.eqv': ['Le da un nombre a un número para usarlo en el código.', '.eqv READ_INT 5 hace que li a7, READ_INT cargue 5 en a7.'],
   bne: ['Salta a la etiqueta si los dos registros contienen valores distintos.', 'bne t2, zero, vuelta vuelve a vuelta mientras t2 sea distinto de cero.'],
   j: ['Salta directamente a una etiqueta.', 'j fin continúa en fin sin guardar una dirección de regreso.'],
   jal: ['Llama a una subrutina y guarda dónde debe regresar.', 'jal ra, salida salta a salida y guarda en ra la dirección de la instrucción siguiente.'],
@@ -275,8 +285,47 @@ function renderRadar(s) {
   els.radar.replaceChildren(svg);
 }
 
+const traceBody = el('tbody');
+const traceTable = el('table', {},
+  el('thead', {}, el('tr', {}, ...['Momento', 's3', 't2 apunta a', 'Qué pasa'].map(label =>
+    el('th', { scope: 'col' }, label)))),
+  traceBody);
+const memoryStrip = el('ol', { class: 'memory-strip', 'aria-label': 'Casillas de XD' });
+const tracePointer = el('p', { class: 'trace-pointer' });
+const tracePanel = el('section', { class: 'lane array-trace empty', 'aria-label': 'Traza del arreglo' },
+  el('h3', { class: 'lane-tag' }, 'Traza del arreglo'),
+  tracePointer,
+  memoryStrip,
+  el('div', { class: 'trace-scroll', tabindex: '0' }, traceTable));
+els.registers.closest('.lane').before(tracePanel);
+
+function renderArrayTrace(s) {
+  const rows = s.traceRows;
+  tracePanel.classList.toggle('empty', !rows);
+  if (!rows) return;
+
+  const demo = s.phase === 'demo';
+  tracePointer.textContent = demo
+    ? 't2 es el puntero. Busca su flecha sobre las casillas de XD.'
+    : 'Entradas en orden: 4, 1, 7, 2, 9. Anota una fila por vuelta, incluida la que toma el salto.';
+  memoryStrip.hidden = !demo;
+  memoryStrip.replaceChildren(...(demo ? [...s.memory, { value: 'Fuera del arreglo' }].map((cell, index) => {
+    const pointerHere = cell.address
+      ? cell.address === s.registers.t2
+      : Number(s.registers.t2) === Number(s.memory.at(-1).address) + 4;
+    return el('li', { class: pointerHere ? 'pointed' : null },
+      el('span', { class: 'pointer-tag' }, pointerHere ? '↓ t2' : ''),
+      el('code', {}, index ? 'XD + ' + index * 4 : 'XD'),
+      el('strong', {}, cell.value));
+  }) : []));
+  const blankRows = [['Lectura', '…', '…', '…'], ['Impresión', '…', '…', '…']];
+  traceBody.replaceChildren(...(demo ? rows : blankRows).map(row =>
+    el('tr', {}, ...row.map(value => el('td', {}, value)))));
+}
+
 function renderScene(s, prev) {
   renderRadar(s);
+  renderArrayTrace(s);
   const sameStep = prev && prev.missionId === s.missionId;
   const regChanged = sameStep ? changedKeys(s.registers, prev.registers) : new Set();
   const memNow = Object.fromEntries(s.memory.map(m => [m.address, m.value]));
@@ -351,6 +400,7 @@ function renderHeader(s) {
 /* ---------- Pregunta, respuesta y corrección ---------- */
 
 function demoNarration(s) {
+  if (s.narration) return s.narration;
   const line = s.activeLine != null ? s.code[s.activeLine] : '';
   const fx = s.effects[0] ?? (s.registers && Object.keys(s.registers).length
     ? { type: 'register', target: Object.keys(s.registers).at(-1) } : null);
@@ -684,3 +734,4 @@ document.addEventListener('keydown', event => {
 
 render(getState());
 focusForState(state);
+

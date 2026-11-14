@@ -379,3 +379,38 @@ button { font: inherit; color: inherit; }
 .instruction-guide dd { margin: 0; overflow-wrap: anywhere; }
 .instruction-guide .guide-example { display: block; color: var(--muted); }
 .instruction-guide summary { cursor: pointer; font-weight: 700; }
+
+
+/* Traza de arreglos */
+.array-trace { gap: .65rem; }
+.trace-pointer { color: var(--muted); font-size: .9rem; }
+.memory-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.memory-strip li {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+  padding: .35rem;
+  text-align: center;
+  border: 1px solid var(--rail);
+  border-radius: 8px;
+  background: var(--node);
+  overflow-wrap: anywhere;
+}
+.memory-strip .pointed { border: 2px solid var(--orange); }
+.pointer-tag { min-height: 1.3em; color: var(--orange); font-weight: 800; }
+.trace-scroll { overflow-x: auto; }
+.trace-scroll table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.trace-scroll th, .trace-scroll td {
+  padding: .35rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rail);
+}
+.trace-scroll th { color: var(--muted); }
+.code:has(li:nth-child(20)) { position: relative; max-height: 32rem; overflow-y: auto; }

@@ -1,3 +1,5 @@
+import { arrayLesson } from './array-lesson.mjs';
+
 const question = (code, text, expected, explanation, options = {}) => ({
   code: code ? code.split('\n') : [],
   text,
@@ -47,9 +49,9 @@ export const lessons = [
       question('.data\nyA: .word 3\n.text\nla t0, yA\nlw t1, 0(t0)', 'la carga la dirección de yA. lw lee la palabra de esa dirección. ¿Qué recibe t1?', '3',
         't0 contiene la dirección y t1 recibe el valor almacenado allí.',
         { line: 4, before: { registers: { t0: '0x10010000' }, memory: [{ address: '0x10010000', value: 3 }] }, after: { registers: { t0: '0x10010000', t1: 3 } }, effect: ['register', 't1'] }),
-      question('addi t1, t1, 2\n___', 't1 ya vale 5. Completa la línea con sw para guardar t1 en 0(t0).', 'sw t1, 0(t0)',
-        'sw escribe el valor de t1 en la dirección que contiene t0.',
-        { line: 1, before: { registers: { t0: '0x10010000', t1: 5 }, memory: [{ address: '0x10010000', value: 3 }] }, after: { memory: [{ address: '0x10010000', value: 5 }] }, effect: ['memory', '0x10010000'] }),
+      question('addi t1, t1, 2\n___', 'La suma ya dejó un 5 en t1. Escribe un sw que copie ese 5 a la casilla de memoria cuya dirección está en t0.', 'sw t1, 0(t0)',
+        'La casilla marcada 0x10010000 cambia de 3 a 5. t1 conserva el 5.',
+        { line: 1, hint: 'Escribe sw, luego el registro que contiene el dato y por último 0(t0). El 0 dice que usas la dirección de t0 tal cual.', before: { registers: { t0: '0x10010000', t1: 5 }, memory: [{ address: '0x10010000', value: 3 }] }, after: { memory: [{ address: '0x10010000', value: 5 }] }, effect: ['memory', '0x10010000'] }),
       theory('En RV32, ¿cuántos bytes ocupa un valor declarado con .word?', '4', 'Una palabra ocupa 4 bytes. Con lb y sb trabajas con un byte.', '1', '4'),
     ],
   },
@@ -102,6 +104,7 @@ export const lessons = [
       theory('¿Qué registro apunta a la pila?', 'sp', 'sp apunta al marco de pila actual. ra guarda la dirección de retorno.', 'sp', 'ra'),
     ],
   },
+  arrayLesson,
   {
     id: 'parcial',
     title: 'Parcial de asteroides',
@@ -119,3 +122,4 @@ export const lessons = [
     ],
   },
 ];
+
