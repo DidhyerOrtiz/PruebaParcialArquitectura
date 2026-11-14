@@ -357,3 +357,25 @@ button { font: inherit; color: inherit; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   .progress-fill { transition: none; }
 }
+
+/* ---------- Guía de instrucciones ---------- */
+.instruction-guide { margin-bottom: 1rem; }
+.instruction-guide[hidden] { display: none; }
+.instruction-guide > p,
+.instruction-guide details { margin-top: .65rem; }
+.instruction-guide h4 { margin: .8rem 0 .25rem; font-size: .95rem; }
+.instruction-guide dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: .45rem .8rem;
+  margin: .5rem 0 0;
+}
+.instruction-guide dt code {
+  color: var(--matte);
+  background: var(--orange);
+  padding: .1rem .35rem;
+  border-radius: .25rem;
+}
+.instruction-guide dd { margin: 0; overflow-wrap: anywhere; }
+.instruction-guide .guide-example { display: block; color: var(--muted); }
+.instruction-guide summary { cursor: pointer; font-weight: 700; }
