@@ -73,5 +73,6 @@ test('la interfaz recibe una copia del estado', () => {
   state.registers.t0 = 99;
   state.missions.pop();
   assert.equal(getState().registers.t0, 7);
-  assert.equal(getState().missions.length, 6);
+  assert.equal(getState().missions.length, 7);
 });
+
