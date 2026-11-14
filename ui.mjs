@@ -526,9 +526,11 @@ function render(next, { animate = true } = {}) {
   renderQuestion(next, keyChanged);
 
   if (animate && next.effects.length) {
-    // Si la escena cambió de paso, la ficha sale de la línea activa nueva.
-    const sameFrame = prev && prev.missionId === next.missionId && prev.code.join('\n') === next.code.join('\n');
-    animateEffects(next, sameFrame && fromRect?.width ? fromRect : null);
+    // Dentro de la misma pregunta (p. ej. un salto al acertar), la ficha sale de la
+    // línea que se ejecutó. Al cambiar de pregunta o de cuadro de la demo, sale de
+    // la línea activa nueva, aunque el código sea idéntico.
+    const sameStep = prev && keyOf(prev) === key;
+    animateEffects(next, sameStep && fromRect?.width ? fromRect : null);
   } else {
     cancelTokens();
   }
