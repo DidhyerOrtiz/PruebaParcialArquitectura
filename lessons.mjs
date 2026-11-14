@@ -1,0 +1,121 @@
+const question = (code, text, expected, explanation, options = {}) => ({
+  code: code ? code.split('\n') : [],
+  text,
+  expected,
+  explanation,
+  ...options,
+});
+
+const theory = (text, expected, explanation, ...choices) =>
+  question('', text, expected, explanation, { choices });
+
+export const lessons = [
+  {
+    id: 'registros',
+    title: 'Encender la nave',
+    demo: [
+      {
+        code: ['li t0, 7', 'addi t1, t0, 2'],
+        activeLine: 0,
+        registers: { t0: 7 },
+        effects: [{ type: 'register', target: 't0' }],
+      },
+      {
+        code: ['li t0, 7', 'addi t1, t0, 2'],
+        activeLine: 1,
+        registers: { t0: 7, t1: 9 },
+        effects: [{ type: 'register', target: 't1' }],
+      },
+    ],
+    steps: [
+      question('li t0, 7\naddi t1, t0, 2', 'addi suma 2 a t0. Escribe el valor que queda en t1.', '9',
+        'El primer registro es el destino. t1 recibe 9 y t0 conserva 7.',
+        { line: 1, before: { registers: { t0: 7 } }, after: { registers: { t0: 7, t1: 9 } }, effect: ['register', 't1'] }),
+      question('li t0, 3\nli t1, 4\nadd t2, t0, t1', 'add suma los dos registros de la derecha. ¿Qué queda en t2?', '7',
+        'Se suman 3 y 4. El resultado se guarda en t2.',
+        { line: 2, before: { registers: { t0: 3, t1: 4 } }, after: { registers: { t0: 3, t1: 4, t2: 7 } }, effect: ['register', 't2'] }),
+      question('main:\n___', 'Escribe la instrucción li que guarda 5 en t0.', 'li t0, 5', 'li carga un número directamente en un registro.',
+        { line: 1, after: { registers: { t0: 5 } }, effect: ['register', 't0'] }),
+      theory('¿Dónde vive t0?', 'En el procesador', 'Un registro guarda un valor dentro del procesador.', 'En el display', 'En el procesador'),
+      theory('¿Qué se pone en .text?', 'Instrucciones', '.text contiene el código y .data contiene los datos inicializados.', 'Instrucciones', 'Datos inicializados'),
+    ],
+  },
+  {
+    id: 'memoria',
+    title: 'Guardar coordenadas',
+    steps: [
+      question('.data\nyA: .word 3\n.text\nla t0, yA\nlw t1, 0(t0)', 'la carga la dirección de yA. lw lee la palabra de esa dirección. ¿Qué recibe t1?', '3',
+        't0 contiene la dirección y t1 recibe el valor almacenado allí.',
+        { line: 4, before: { registers: { t0: '0x10010000' }, memory: [{ address: '0x10010000', value: 3 }] }, after: { registers: { t0: '0x10010000', t1: 3 } }, effect: ['register', 't1'] }),
+      question('addi t1, t1, 2\n___', 't1 ya vale 5. Completa la línea con sw para guardar t1 en 0(t0).', 'sw t1, 0(t0)',
+        'sw escribe el valor de t1 en la dirección que contiene t0.',
+        { line: 1, before: { registers: { t0: '0x10010000', t1: 5 }, memory: [{ address: '0x10010000', value: 3 }] }, after: { memory: [{ address: '0x10010000', value: 5 }] }, effect: ['memory', '0x10010000'] }),
+      theory('En RV32, ¿cuántos bytes ocupa un valor declarado con .word?', '4', 'Una palabra ocupa 4 bytes. Con lb y sb trabajas con un byte.', '1', '4'),
+    ],
+  },
+  {
+    id: 'salida',
+    title: 'Activar consola y display',
+    steps: [
+      question('li a0, 7\nli a7, 1\necall', 'En RARS, el servicio 1 imprime un entero. ¿Qué aparece en consola?', '7',
+        'a7 selecciona el servicio y a0 contiene el entero que se imprime.',
+        { line: 2, before: { registers: { a0: 7, a7: 1 } }, after: { consoleText: '7' }, effect: ['console', 'console'] }),
+      question('li t0, 0xFFFF0010\nli t1, 0x07\n___', 'Completa con sb para escribir el patrón 0x07 en el display derecho.', 'sb t1, 0(t0)',
+        'sb escribe un byte. En esa dirección, el patrón 0x07 enciende los segmentos del 7.',
+        { line: 2, before: { registers: { t0: '0xFFFF0010', t1: '0x07' } }, after: { displays: { left: 0, right: 7 } }, effect: ['display', 'right'] }),
+      theory('¿Qué número va en a7 para leer una cadena con ReadString en RARS?', '8',
+        'El servicio 8 recibe en a0 la dirección del búfer y en a1 el espacio disponible.', '4', '8', '1'),
+    ],
+  },
+  {
+    id: 'colision',
+    title: 'Detectar una colisión',
+    steps: [
+      question('lb t0, 0(a0)\naddi t0, t0, -48', 'El primer carácter del búfer es «3», cuyo código ASCII es 51. ¿Qué queda en t0?', '3',
+        'lb lee 51. Restar el código ASCII de «0» (48) produce el número 3.',
+        { line: 1, before: { registers: { t0: 51 } }, after: { registers: { t0: 3 } }, effect: ['register', 't0'] }),
+      question('li t0, 1\nli t1, 2\nli t2, 2\nvuelta: add t0, t0, t1\naddi t2, t2, -1\nbne t2, zero, vuelta\nfin_bucle:', 'y comienza en 1. Suma 2 por vuelta. ¿Cuánto vale y (t0) al terminar las dos vueltas?', '5',
+        'Primera vuelta: y=3 y quedan 1. Segunda: y=5 y quedan 0. bne deja de saltar.',
+        { line: 3, before: { registers: { t0: 1, t1: 2, t2: 2 } }, after: { activeLine: 6, registers: { t0: 5, t1: 2, t2: 0 } }, effect: ['register', 't0'] }),
+      question('beq t0, t1, colision_ab\naddi s0, s0, 1\ncolision_ab:', 'A y B están a la misma altura, en el mismo x. ¿A qué etiqueta salta beq?', 'colision_ab',
+        'beq salta cuando los dos registros tienen el mismo valor. En el proyecto se comparan las alturas para un x compartido.',
+        { line: 0, before: { registers: { t0: 5, t1: 5 } }, after: { activeLine: 2 }, effect: ['branch', 'colision_ab'] }),
+      question('addi s0, s0, 1\nadd t0, t0, s1\nadd t1, t1, s2\nadd t2, t2, s3', 'x inicia en 0. A, B y C parten en 0, 4 y 1. Por vuelta suman 2, 0 y 1. Anota las alturas al primer paso como A,B,C.', '2,4,2',
+        'Al avanzar a x=1 las alturas quedan en 2, 4 y 2. Compara A-B, A-C y B-C para encontrar A-C.',
+        { line: 0, before: { registers: { s0: 0, t0: 0, t1: 4, t2: 1, s1: 2, s2: 0, s3: 1 } }, after: { registers: { s0: 1, t0: 2, t1: 4, t2: 2, s1: 2, s2: 0, s3: 1 } }, effect: ['register', 's0'] }),
+      question('beq t0, t1, revisar_triple\nbeq t0, t2, evento_ac\nbeq t1, t2, evento_bc\nj sin_colision\nevento_ac: # Aquí se procesa A-C', 'A, B y C están en 2, 4 y 2. Escribe la etiqueta del evento que se dispara.', 'evento_ac',
+        'A-B falla y A-C coincide. El salto lleva a evento_ac. Allí el programa registra un evento y muestra A-C en (1, 2).',
+        { line: 0, before: { registers: { t0: 2, t1: 4, t2: 2 } }, after: { activeLine: 4 }, effect: ['branch', 'evento_ac'] }),
+      theory('Si A = B y B = C en la misma iteración, ¿cuántos eventos registra el proyecto?', '1', 'Es una sola coincidencia triple. La consola muestra A-B-C y los displays muestran A-B.', '3', '1'),
+    ],
+  },
+  {
+    id: 'subrutinas',
+    title: 'Volver a la nave',
+    steps: [
+      question('main: jal ra, salida\nfin: li a7, 10\nsalida: ret', 'Después de ret, ¿a cuál etiqueta regresa el programa?', 'fin',
+        'jal guarda en ra la dirección siguiente a la llamada. ret vuelve a esa dirección.',
+        { line: 2, before: { registers: { ra: 'fin' } }, after: { activeLine: 1 }, effect: ['branch', 'fin'] }),
+      question('addi sp, sp, -16\nsw ra, 12(sp)\njal ra, imprimir\nrestaurar: ___\naddi sp, sp, 16\nret', 'Escribe la instrucción que recupera ra antes de restaurar sp.', 'lw ra, 12(sp)',
+        'La llamada a imprimir reemplaza ra. lw recupera de la pila el retorno original.',
+        { line: 3, before: { registers: { ra: 'restaurar' } }, after: { registers: { ra: 'retorno_llamador' } }, effect: ['register', 'ra'] }),
+      theory('¿Qué registro apunta a la pila?', 'sp', 'sp apunta al marco de pila actual. ra guarda la dirección de retorno.', 'sp', 'ra'),
+    ],
+  },
+  {
+    id: 'parcial',
+    title: 'Parcial de asteroides',
+    mode: 'exam',
+    steps: [
+      question('la t0, yA\nli t1, 6\nsw t1, 0(t0)\nlw t2, 0(t0)', 'yA empieza con 2. ¿Qué valor queda en t2?', '6', 'sw guarda 6 en yA y lw carga la misma palabra en t2.'),
+      question('li a0, 3\nli a7, 1\necall', '¿Qué imprime la consola de RARS?', '3', 'El servicio 1 imprime como entero el valor que hay en a0.'),
+      question('lb t0, 0(a0)\naddi t0, t0, -48', 'En el búfer está «4» (ASCII 52). ¿Qué valor queda en t0?', '4', '52 − 48 = 4. Esa operación convierte un dígito leído en su valor numérico.'),
+      question('li t0, 2\nli t1, -1\nli t2, 2\nvuelta: add t0, t0, t1\naddi t2, t2, -1\nbne t2, zero, vuelta', 'Escribe la altura final t0 para dos iteraciones.', '0', 'La primera iteración deja 1 y la segunda deja 0.'),
+      question('li t0, 3\nli t1, 1\nli t2, 3', 'Las alturas A, B y C están en t0, t1 y t2. Escribe el par que coincide.', 'A-C', 'A y C están a altura 3 para el mismo x. B está a altura 1.', { accept: ['C-A'] }),
+      question('li t0, 4\nli t1, 4\nli t2, 4', 'En la siguiente iteración las tres alturas coinciden. Escribe la pareja que queda en los displays.', 'A-B',
+        'La triple coincidencia se imprime como A-B-C y deja A-B en los displays.'),
+      question('', 'Si hubo solo los dos eventos anteriores, ¿cuántos eventos imprime el resumen?', '2', 'A-C suma uno y A-B-C suma uno.'),
+      question('jal ra, evento\nresumen: li a7, 1\nevento: ret', 'Escribe la etiqueta a la que vuelve ret.', 'resumen', 'ra apunta a la línea del resumen, justo después del jal.'),
+    ],
+  },
+];
