@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1C1D20">
+  <title>Misión RISC‑V · Arquitectura II</title>
+  <link rel="icon" href="assets/nave.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="ui.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#pregunta">Saltar a la pregunta</a>
+
+  <header class="top">
+    <div class="brand">
+      <img src="assets/nave.svg" alt="" width="36" height="36">
+      <div>
+        <p class="eyebrow">Arquitectura II · RARS</p>
+        <h1>Misión RISC‑V</h1>
+      </div>
+    </div>
+    <nav class="missions" aria-label="Misiones">
+      <ol id="mission-list"></ol>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <section class="mission-bar" aria-live="polite">
+      <div>
+        <p class="eyebrow" id="mission-kicker">Misión 1</p>
+        <h2 id="mission-title">Encender la nave</h2>
+      </div>
+      <div class="progress" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+        <span class="progress-text" id="progress-text">Paso 1 de 1</span>
+        <span class="progress-track"><span class="progress-fill" id="progress-fill"></span></span>
+      </div>
+    </section>
+
+    <div class="board">
+      <section class="panel code-panel" aria-labelledby="code-label">
+        <h3 class="lane-tag" id="code-label">Código</h3>
+        <ol class="code" id="code"></ol>
+        <p class="code-empty" id="code-empty" hidden>Pregunta de teoría: no hay código que ejecutar.</p>
+      </section>
+
+      <section class="panel scene" aria-labelledby="scene-label">
+        <h3 class="sr-only" id="scene-label">Estado de la máquina</h3>
+        <p class="scene-empty" id="scene-empty" hidden></p>
+        <div class="lane radar empty" data-lane="radar">
+          <span class="lane-tag">Radar</span>
+          <div id="radar"></div>
+        </div>
+        <div class="lane" data-lane="registers">
+          <span class="lane-tag">Registros</span>
+          <ul class="nodes" id="registers"></ul>
+        </div>
+        <div class="lane" data-lane="memory">
+          <span class="lane-tag">Memoria</span>
+          <ul class="nodes" id="memory"></ul>
+        </div>
+        <div class="lane" data-lane="console">
+          <span class="lane-tag">Consola</span>
+          <pre class="console" id="console" aria-label="Salida de consola"></pre>
+        </div>
+        <div class="lane" data-lane="displays">
+          <span class="lane-tag">Displays</span>
+          <div class="displays">
+            <figure class="seg" id="display-left" data-target="left">
+              <svg viewBox="0 0 60 100" aria-hidden="true"></svg>
+              <figcaption>Izq. <code>0xFFFF0011</code></figcaption>
+            </figure>
+            <figure class="seg" id="display-right" data-target="right">
+              <svg viewBox="0 0 60 100" aria-hidden="true"></svg>
+              <figcaption>Der. <code>0xFFFF0010</code></figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel question" id="pregunta" aria-labelledby="prompt-text" tabindex="-1">
+      <p class="eyebrow" id="phase-label">Pregunta</p>
+      <p class="prompt" id="prompt-text"></p>
+
+      <form id="answer-form" autocomplete="off">
+        <div class="answer-row" id="text-answer">
+          <label class="sr-only" for="answer">Tu respuesta</label>
+          <input id="answer" name="answer" type="text" inputmode="text" spellcheck="false" autocapitalize="off" placeholder="Escribe tu respuesta">
+          <button type="submit" class="btn primary" id="submit">Comprobar</button>
+        </div>
+        <div class="choices" id="choices" role="group" aria-label="Opciones"></div>
+      </form>
+
+      <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
+      <div class="hint" id="hint" hidden></div>
+
+      <div class="results" id="results" hidden></div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" id="hint-btn">Pista</button>
+        <button type="button" class="btn ghost" id="restart-btn">Reiniciar misión</button>
+        <button type="button" class="btn primary" id="next-btn">Siguiente <span aria-hidden="true">→</span></button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p><kbd>Enter</kbd> comprueba o avanza · <kbd>1</kbd>–<kbd>4</kbd> eligen opción · <kbd>P</kbd> muestra la pista</p>
+  </footer>
+</body>
+</html>
