@@ -186,9 +186,9 @@ function renderInstructionGuide(s) {
     if (Object.hasOwn(instructionGuide, instruction)) names.add(instruction);
   }
   if (s.code.some(line => line.includes('___'))) {
-    for (const word of s.prompt?.text.match(/[a-z]+/g) ?? []) {
-      if (Object.hasOwn(instructionGuide, word)) names.add(word);
-    }
+    const mnemonic = s.prompt?.text.match(/\b(?:instrucción|con)\s+([a-z]+)\b/i)?.[1];
+    if (mnemonic && Object.hasOwn(instructionGuide, mnemonic)) names.add(mnemonic);
+    if (names.has('sw') && /\brecupera\b/.test(s.prompt?.text ?? '')) names.add('lw');
   }
 
   currentGuidePanel.hidden = names.size === 0;
