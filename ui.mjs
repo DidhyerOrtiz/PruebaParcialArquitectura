@@ -135,6 +135,66 @@ function renderCode(s) {
   els.codeEmpty.hidden = !empty;
 }
 
+
+const instructionGuide = {
+  li: ['Carga un número en un registro.', 'li t0, 7 guarda 7 en t0.'],
+  add: ['Suma los valores de dos registros y guarda el resultado en el primero.', 'add t2, t0, t1 guarda la suma de t0 y t1 en t2.'],
+  addi: ['Suma un número escrito en la instrucción al valor de un registro.', 'addi t1, t0, 2 guarda en t1 lo que vale t0 más 2.'],
+  la: ['Guarda en un registro la dirección de una etiqueta.', 'la t0, yA guarda en t0 la dirección donde está yA.'],
+  lw: ['Lee en memoria una palabra de 4 bytes y la guarda en un registro.', 'lw t1, 0(t0) lee 4 bytes desde la dirección guardada en t0.'],
+  sw: ['Guarda los 4 bytes de un registro en memoria.', 'sw t1, 0(t0) escribe t1 en la dirección guardada en t0.'],
+  lb: ['Lee un byte de memoria y lo guarda en un registro, extendiendo su signo.', 'lb t0, 0(a0) lee el byte en la dirección guardada en a0.'],
+  sb: ['Escribe en memoria el byte menos significativo de un registro.', 'sb t1, 0(t0) escribe ese byte de t1 en la dirección guardada en t0.'],
+  ecall: ['Pide un servicio a RARS. a7 indica el servicio y otros registros llevan los datos.', 'Con a7 = 1, ecall imprime el número de a0. Con a7 = 8, lee una cadena. Con a7 = 10, termina.'],
+  beq: ['Salta a la etiqueta si los dos registros contienen el mismo valor.', 'beq t0, t1, choque salta a choque cuando t0 y t1 son iguales.'],
+  bne: ['Salta a la etiqueta si los dos registros contienen valores distintos.', 'bne t2, zero, vuelta vuelve a vuelta mientras t2 sea distinto de cero.'],
+  j: ['Salta directamente a una etiqueta.', 'j fin continúa en fin sin guardar una dirección de regreso.'],
+  jal: ['Llama a una subrutina y guarda dónde debe regresar.', 'jal ra, salida salta a salida y guarda en ra la dirección de la instrucción siguiente.'],
+  ret: ['Vuelve a la dirección guardada en ra.', 'Después de jal ra, salida, ret vuelve a la línea siguiente a la llamada si ra se conserva.'],
+  '.data': ['Indica dónde se declaran los datos del programa.', 'Después de .data, yA: .word 3 reserva una palabra con el valor 3.'],
+  '.text': ['Indica dónde va el código que se ejecuta.', 'Después de .text se escriben instrucciones como li o add.'],
+  '.word': ['Reserva e inicializa una palabra de 4 bytes.', 'yA: .word 3 inicializa yA con 3.'],
+};
+
+function guideEntry(name) {
+  const [meaning, example] = instructionGuide[name];
+  return [
+    el('dt', {}, el('code', {}, name)),
+    el('dd', {}, meaning, el('span', { class: 'guide-example' }, example)),
+  ];
+}
+
+const currentGuide = el('dl');
+const currentGuidePanel = el('div', {},
+  el('h4', {}, 'En este ejercicio'), currentGuide);
+const guide = el('section', { class: 'panel instruction-guide', 'aria-labelledby': 'instruction-guide-title' },
+  el('h3', { class: 'lane-tag', id: 'instruction-guide-title' }, 'Guía de instrucciones'),
+  el('p', {}, 'Un registro guarda un valor. t0 y t1 son registros; ra guarda el retorno, sp apunta a la pila y zero siempre vale 0. Una etiqueta como vuelta: marca un lugar del código.'),
+  currentGuidePanel,
+  el('details', {}, el('summary', {}, 'Ver todas las instrucciones'),
+    el('dl', {}, ...Object.keys(instructionGuide).flatMap(guideEntry))),
+);
+els.board.before(guide);
+
+function renderInstructionGuide(s) {
+  guide.hidden = isExam(s) || s.phase === 'complete';
+  if (guide.hidden) return;
+
+  const names = new Set();
+  for (const line of s.code) {
+    const instruction = line.replace(/#.*$/, '').replace(/^\s*[\w.]+:/, '').trim().split(/\s+/)[0];
+    if (Object.hasOwn(instructionGuide, instruction)) names.add(instruction);
+  }
+  if (s.code.some(line => line.includes('___'))) {
+    for (const word of s.prompt?.text.match(/[a-z]+/g) ?? []) {
+      if (Object.hasOwn(instructionGuide, word)) names.add(word);
+    }
+  }
+
+  currentGuidePanel.hidden = names.size === 0;
+  currentGuide.replaceChildren(...[...names].flatMap(guideEntry));
+}
+
 /* ---------- Escena ---------- */
 
 function changedKeys(current, previous) {
@@ -522,6 +582,7 @@ function render(next, { animate = true } = {}) {
   renderMissions(next);
   renderHeader(next);
   renderCode(next);
+  renderInstructionGuide(next);
   renderScene(next, prev);
   renderQuestion(next, keyChanged);
 
