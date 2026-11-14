@@ -3,6 +3,7 @@ import { lessons } from './lessons.mjs';
 const missions = lessons.map(({ id, title }) => ({ id, title }));
 let mission = lessons[0];
 let stepIndex = 0;
+let demoIndex = 0;
 let phase = 'demo';
 let attempts = [];
 let feedback = null;
@@ -13,14 +14,18 @@ let effects = [];
 function normalize(value) {
   const text = String(value ?? '').trim().toLowerCase().replace(/[–—]/g, '-');
   if (/^[+-]?\d+$|^0x[\da-f]+$/i.test(text)) return String(Number(text));
-  return text.replace(/\s*[,()]\s*|\s+/g, token => token.trim() || ' ');
+  return text.replace(/\s*,\s*/g, ' ').replace(/\s*([()-])\s*/g, '$1').replace(/\s+/g, ' ');
+}
+
+function isCorrect(step, answer) {
+  return [step.expected, ...(step.accept ?? [])].some(value => normalize(value) === normalize(answer));
 }
 
 export function getState() {
   const mode = mission.mode ?? 'practice';
   const step = mission.steps[stepIndex];
   const showQuestion = phase === 'question' || phase === 'feedback';
-  const frame = phase === 'demo' ? mission.demo : {
+  const frame = phase === 'demo' ? mission.demo[demoIndex] : {
     code: step.code,
     activeLine: step.line ?? null,
     ...step.before,
@@ -30,6 +35,7 @@ export function getState() {
     ? mission.steps.map((item, index) => ({
       prompt: item.text,
       answer: attempts[index],
+      correct: isCorrect(item, attempts[index]),
       expected: item.expected,
       explanation: item.explanation,
     }))
@@ -70,12 +76,13 @@ export function startMission(id) {
 
   mission = selected;
   stepIndex = 0;
+  demoIndex = 0;
   phase = selected.demo ? 'demo' : 'question';
   attempts = [];
   feedback = null;
   canAdvance = phase === 'demo';
   solved = false;
-  effects = selected.demo?.effects ?? [];
+  effects = selected.demo?.[0]?.effects ?? [];
   return getState();
 }
 
@@ -85,7 +92,7 @@ export function submitAnswer(value) {
   if (!answer || solved || !['question', 'feedback'].includes(phase)) return getState();
 
   const step = mission.steps[stepIndex];
-  const correct = normalize(answer) === normalize(step.expected);
+  const correct = isCorrect(step, answer);
   phase = 'feedback';
   if (mission.mode === 'exam') {
     attempts[stepIndex] = answer;
@@ -110,6 +117,12 @@ export function submitAnswer(value) {
 export function nextStep() {
   effects = [];
   if (!canAdvance) return getState();
+
+  if (phase === 'demo' && demoIndex + 1 < mission.demo.length) {
+    demoIndex += 1;
+    effects = mission.demo[demoIndex].effects ?? [];
+    return getState();
+  }
 
   if (phase === 'demo') {
     phase = 'question';
