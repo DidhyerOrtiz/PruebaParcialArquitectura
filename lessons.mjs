@@ -1,5 +1,5 @@
 const question = (code, text, expected, explanation, options = {}) => ({
-  code: code.split('\n'),
+  code: code ? code.split('\n') : [],
   text,
   expected,
   explanation,
@@ -13,12 +13,20 @@ export const lessons = [
   {
     id: 'registros',
     title: 'Encender la nave',
-    demo: {
-      code: ['li t0, 7', 'addi t1, t0, 2'],
-      activeLine: 0,
-      registers: { t0: 7 },
-      effects: [{ type: 'register', target: 't0' }],
-    },
+    demo: [
+      {
+        code: ['li t0, 7', 'addi t1, t0, 2'],
+        activeLine: 0,
+        registers: { t0: 7 },
+        effects: [{ type: 'register', target: 't0' }],
+      },
+      {
+        code: ['li t0, 7', 'addi t1, t0, 2'],
+        activeLine: 1,
+        registers: { t0: 7, t1: 9 },
+        effects: [{ type: 'register', target: 't1' }],
+      },
+    ],
     steps: [
       question('li t0, 7\naddi t1, t0, 2', 'addi suma 2 a t0. Escribe el valor que queda en t1.', '9',
         'El primer registro es el destino. t1 recibe 9 y t0 conserva 7.',
@@ -28,7 +36,7 @@ export const lessons = [
         { line: 2, before: { registers: { t0: 3, t1: 4 } }, after: { registers: { t0: 3, t1: 4, t2: 7 } }, effect: ['register', 't2'] }),
       question('main:', 'Escribe la instrucción li que guarda 5 en t0.', 'li t0, 5', 'li carga un número directamente en un registro.',
         { after: { registers: { t0: 5 } }, effect: ['register', 't0'] }),
-      theory('¿Dónde vive t0?', 'En el procesador', 'Un registro guarda un valor dentro del procesador.', 'En el procesador', 'En el display'),
+      theory('¿Dónde vive t0?', 'En el procesador', 'Un registro guarda un valor dentro del procesador.', 'En el display', 'En el procesador'),
       theory('¿Qué se pone en .text?', 'Instrucciones', '.text contiene el código y .data contiene los datos inicializados.', 'Instrucciones', 'Datos inicializados'),
     ],
   },
@@ -42,7 +50,7 @@ export const lessons = [
       question('addi t1, t1, 2\n___', 't1 ya vale 5. Completa la línea con sw para guardar t1 en 0(t0).', 'sw t1, 0(t0)',
         'sw escribe el valor de t1 en la dirección que contiene t0.',
         { line: 1, before: { registers: { t0: '0x10010000', t1: 5 }, memory: [{ address: '0x10010000', value: 3 }] }, after: { memory: [{ address: '0x10010000', value: 5 }] }, effect: ['memory', '0x10010000'] }),
-      theory('En RV32, ¿cuántos bytes ocupa un valor declarado con .word?', '4', 'Una palabra ocupa 4 bytes. Con lb y sb trabajas con un byte.', '4', '1'),
+      theory('En RV32, ¿cuántos bytes ocupa un valor declarado con .word?', '4', 'Una palabra ocupa 4 bytes. Con lb y sb trabajas con un byte.', '1', '4'),
     ],
   },
   {
@@ -56,7 +64,7 @@ export const lessons = [
         'sb escribe un byte. En esa dirección, el patrón 0x07 enciende los segmentos del 7.',
         { line: 2, before: { registers: { t0: '0xFFFF0010', t1: '0x07' } }, after: { displays: { left: 0, right: 7 } }, effect: ['display', 'right'] }),
       theory('¿Qué número va en a7 para leer una cadena con ReadString en RARS?', '8',
-        'El servicio 8 recibe en a0 la dirección del búfer y en a1 el espacio disponible.', '8', '4', '1'),
+        'El servicio 8 recibe en a0 la dirección del búfer y en a1 el espacio disponible.', '4', '8', '1'),
     ],
   },
   {
@@ -78,7 +86,7 @@ export const lessons = [
       question('beq t0, t1, revisar_triple\nbeq t0, t2, evento_ac\nbeq t1, t2, evento_bc', 'A, B y C están en 2, 4 y 2. Escribe la etiqueta del evento que se dispara.', 'evento_ac',
         'A-B falla y A-C coincide. La consola puede mostrar A-C en (1, 2) y el contador aumenta una vez.',
         { line: 0, before: { registers: { t0: 2, t1: 4, t2: 2 } }, after: { activeLine: 1, consoleText: 'A-C (1, 2)' }, effect: ['console', 'console'] }),
-      theory('Si A = B y B = C en la misma iteración, ¿cuántos eventos registra el proyecto?', '1', 'Es una sola coincidencia triple. La consola muestra A-B-C y los displays muestran A-B.', '1', '3'),
+      theory('Si A = B y B = C en la misma iteración, ¿cuántos eventos registra el proyecto?', '1', 'Es una sola coincidencia triple. La consola muestra A-B-C y los displays muestran A-B.', '3', '1'),
     ],
   },
   {
@@ -88,9 +96,9 @@ export const lessons = [
       question('main: jal ra, salida\nfin: li a7, 10\nsalida: ret', 'Después de ret, ¿a cuál etiqueta regresa el programa?', 'fin',
         'jal guarda en ra la dirección siguiente a la llamada. ret vuelve a esa dirección.',
         { line: 2, before: { registers: { ra: 'fin' } }, after: { activeLine: 1 }, effect: ['branch', 'fin'] }),
-      question('addi sp, sp, -16\nsw ra, 12(sp)\njal ra, imprimir\n___\naddi sp, sp, 16\nret', 'Escribe la instrucción que recupera ra antes de restaurar sp.', 'lw ra, 12(sp)',
+      question('addi sp, sp, -16\nsw ra, 12(sp)\njal ra, imprimir\nrestaurar: ___\naddi sp, sp, 16\nret', 'Escribe la instrucción que recupera ra antes de restaurar sp.', 'lw ra, 12(sp)',
         'La llamada a imprimir reemplaza ra. lw recupera de la pila el retorno original.',
-        { line: 3, before: { registers: { ra: 'después de jal' } }, after: { registers: { ra: 'retorno original' } }, effect: ['register', 'ra'] }),
+        { line: 3, before: { registers: { ra: 'restaurar' } }, after: { registers: { ra: 'retorno_llamador' } }, effect: ['register', 'ra'] }),
       theory('¿Qué registro apunta a la pila?', 'sp', 'sp apunta al marco de pila actual. ra guarda la dirección de retorno.', 'sp', 'ra'),
     ],
   },
@@ -99,9 +107,11 @@ export const lessons = [
     title: 'Parcial de asteroides',
     mode: 'exam',
     steps: [
+      question('la t0, yA\nli t1, 6\nsw t1, 0(t0)\nlw t2, 0(t0)', 'yA empieza con 2. ¿Qué valor queda en t2?', '6', 'sw guarda 6 en yA y lw carga la misma palabra en t2.'),
+      question('li a0, 3\nli a7, 1\necall', '¿Qué imprime la consola de RARS?', '3', 'El servicio 1 imprime como entero el valor que hay en a0.'),
       question('lb t0, 0(a0)\naddi t0, t0, -48', 'En el búfer está «4» (ASCII 52). ¿Qué valor queda en t0?', '4', '52 − 48 = 4. Esa operación convierte un dígito leído en su valor numérico.'),
       question('li t0, 2\nli t1, -1\nli t2, 2\nvuelta: add t0, t0, t1\naddi t2, t2, -1\nbne t2, zero, vuelta', 'Escribe la altura final t0 para dos iteraciones.', '0', 'La primera iteración deja 1 y la segunda deja 0.'),
-      question('li t0, 3\nli t1, 1\nli t2, 3', 'Las alturas A, B y C están en t0, t1 y t2. Escribe el par que coincide.', 'A-C', 'A y C están a altura 3 para el mismo x. B está a altura 1.'),
+      question('li t0, 3\nli t1, 1\nli t2, 3', 'Las alturas A, B y C están en t0, t1 y t2. Escribe el par que coincide.', 'A-C', 'A y C están a altura 3 para el mismo x. B está a altura 1.', { accept: ['C-A'] }),
       question('li t0, 4\nli t1, 4\nli t2, 4', 'En la siguiente iteración las tres alturas coinciden. Escribe la pareja que queda en los displays.', 'A-B',
         'La triple coincidencia se imprime como A-B-C y deja A-B en los displays.'),
       question('', 'Si hubo solo los dos eventos anteriores, ¿cuántos eventos imprime el resumen?', '2', 'A-C suma uno y A-B-C suma uno.'),
